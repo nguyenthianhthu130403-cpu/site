@@ -1,137 +1,269 @@
-import { useState, type FC } from 'react';
-import { Calculator } from 'lucide-react';
-
-// Helper component for input fields to reduce repetition
-interface InputFieldProps {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-}
-
-const InputField: FC<InputFieldProps> = ({ id, label, value, onChange, placeholder }) => (
-  <div className="w-full">
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-      Hệ số {label}
-    </label>
-    <input
-      type="number"
-      id={id}
-      name={id}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
-    />
-  </div>
-);
-
-// Main component
-const QuadraticEquationSolverPage = () => {
-  const [coeffs, setCoeffs] = useState({ a: '', b: '', c: '' });
-  const [result, setResult] = useState<string | null>(null);
-  const [resultColor, setResultColor] = useState<string>('text-gray-800');
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCoeffs(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCalculate = () => {
-    const a = parseFloat(coeffs.a);
-    const b = parseFloat(coeffs.b);
-    const c = parseFloat(coeffs.c);
-
-    if (isNaN(a) || isNaN(b) || isNaN(c)) {
-      setResult('Vui lòng nhập đầy đủ và đúng định dạng các hệ số a, b, c.');
-      setResultColor('text-red-600');
-      return;
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Máy tính phương pháp cấp 2 (Newton-Raphson)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 20px;
+      color: #333;
     }
+    h1 {
+      text-align: center;
+      color: #1e40af;
+    }
+    form {
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    input[type=text], input[type=number] {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto 20px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: #f3f4f6;
+      color: #374151;
+      font-weight: 600;
+    }
+    caption {
+      caption-side: top;
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: 10px 0;
+      color: #1e40af;
+    }
+    .result-root {
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      background-color: #d1fae5;
+      color: #065f46;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    .note {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 0.85rem;
+      color: #6b7280;
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+</head>
+<body>
+  <h1>Máy tính phương pháp cấp 2 (Newton-Raphson)</h1>
+  <form id="newtonForm">
+    <label for="expression">f(x)</label>
+    <input type="text" id="expression" name="expression" value="x^2 - 2" placeholder="Ví dụ: x^2 - 2 hoặc sin(x) - x/2" required />
 
-    // Case: a = 0 (Linear equation)
-    if (a === 0) {
-      if (b === 0) {
-        if (c === 0) {
-          setResult('Phương trình có vô số nghiệm.');
-          setResultColor('text-green-600');
-        } else {
-          setResult('Phương trình vô nghiệm.');
-          setResultColor('text-red-600');
-        }
-      } else {
-        const x = -c / b;
-        setResult(`Phương trình có một nghiệm duy nhất: x = ${x.toFixed(4)}`);
-        setResultColor('text-blue-600');
+    <label for="x0">Giá trị ban đầu x₀</label>
+    <input type="number" id="x0" name="x0" value="1" step="any" required />
+
+    <label for="tolerance">Sai số cho phép</label>
+    <input type="number" id="tolerance" name="tolerance" value="0.0001" step="any" min="0" required />
+
+    <label for="maxIter">Số lần lặp tối đa</label>
+    <input type="number" id="maxIter" name="maxIter" value="20" min="1" required />
+
+    <button type="submit">Tính toán</button>
+  </form>
+
+  <div id="errorMsg" class="error" style="display:none;"></div>
+
+  <table id="resultTable" style="display:none;">
+    <caption>Kết quả lặp</caption>
+    <thead>
+      <tr>
+        <th>Lần</th>
+        <th>x</th>
+        <th>f(x)</th>
+        <th>Sai số</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="rootResult" class="result-root" style="display:none;"></div>
+
+  <p class="note">
+    Ghi chú: Đây là phương pháp hội tụ cấp 2 (Newton-Raphson). Kết quả phụ thuộc vào giá trị ban đầu x₀, đạo hàm và dạng của hàm số.
+  </p>
+
+  <script>
+    const form = document.getElementById('newtonForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const resultTable = document.getElementById('resultTable');
+    const resultBody = resultTable.querySelector('tbody');
+    const rootResult = document.getElementById('rootResult');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      errorMsg.style.display = 'none';
+      resultTable.style.display = 'none';
+      rootResult.style.display = 'none';
+      resultBody.innerHTML = '';
+
+      const expr = form.expression.value.trim();
+      const x0 = parseFloat(form.x0.value);
+      const tol = parseFloat(form.tolerance.value);
+      const maxIter = parseInt(form.maxIter.value, 10);
+
+      if (!expr) {
+        showError('Vui lòng nhập biểu thức f(x).');
+        return;
       }
-      return;
+      if (isNaN(x0)) {
+        showError('Giá trị khởi tạo x₀ không hợp lệ.');
+        return;
+      }
+      if (isNaN(tol) || tol <= 0) {
+        showError('Sai số phải là số dương.');
+        return;
+      }
+      if (isNaN(maxIter) || maxIter < 1) {
+        showError('Số lần lặp tối đa phải là số nguyên lớn hơn 0.');
+        return;
+      }
+
+      let derivativeNode;
+      try {
+        derivativeNode = math.derivative(expr, 'x');
+      } catch (e) {
+        showError('Biểu thức không hợp lệ. Ví dụ: x^3 - 5*x + 1 hoặc sin(x) - x/2');
+        return;
+      }
+
+      let currentX = x0;
+      let converged = false;
+
+      for (let i = 1; i <= maxIter; i++) {
+        let fx, dfx;
+        try {
+          fx = math.evaluate(expr, { x: currentX });
+          dfx = derivativeNode.evaluate({ x: currentX });
+        } catch (e) {
+          showError('Lỗi khi tính toán f(x) hoặc đạo hàm tại x = ' + currentX.toFixed(6));
+          return;
+        }
+
+        if (dfx === 0) {
+          showError('Đạo hàm bằng 0 tại x = ' + currentX.toFixed(6) + '. Không thể tiếp tục Newton. Hãy thử x₀ khác.');
+          return;
+        }
+
+        const nextX = currentX - fx / dfx;
+        const error = Math.abs(nextX - currentX);
+
+        addRow(i, nextX, fx, i === 1 ? null : error);
+
+        currentX = nextX;
+
+        if (error < tol) {
+          converged = true;
+          showRoot(nextX);
+          break;
+        }
+
+        if (i === maxIter) {
+          showRoot(nextX);
+        }
+      }
+
+      if (!converged && resultBody.children.length === 0) {
+        showError('Không thể tìm nghiệm với các tham số đã cho.');
+      } else {
+        resultTable.style.display = '';
+      }
+    });
+
+    function addRow(iteration, x, fx, error) {
+      const tr = document.createElement('tr');
+      const tdIter = document.createElement('td');
+      tdIter.textContent = iteration.toString();
+      const tdX = document.createElement('td');
+      tdX.textContent = x.toFixed(6);
+      const tdFx = document.createElement('td');
+      tdFx.textContent = Math.abs(fx) < 1e-15 ? '0' : fx.toFixed(6);
+      const tdError = document.createElement('td');
+      tdError.textContent = error === null ? '—' : error.toExponential(2);
+
+      tr.appendChild(tdIter);
+      tr.appendChild(tdX);
+      tr.appendChild(tdFx);
+      tr.appendChild(tdError);
+
+      resultBody.appendChild(tr);
     }
 
-    // Case: a != 0 (Quadratic equation)
-    const delta = b * b - 4 * a * c;
-
-    if (delta > 0) {
-      const x1 = (-b + Math.sqrt(delta)) / (2 * a);
-      const x2 = (-b - Math.sqrt(delta)) / (2 * a);
-      setResult(`Phương trình có hai nghiệm phân biệt:\nx₁ = ${x1.toFixed(4)}\nx₂ = ${x2.toFixed(4)}`);
-      setResultColor('text-green-600');
-    } else if (delta === 0) {
-      const x = -b / (2 * a);
-      setResult(`Phương trình có nghiệm kép: x₁ = x₂ = ${x.toFixed(4)}`);
-      setResultColor('text-blue-600');
-    } else {
-      setResult('Phương trình vô nghiệm trong tập số thực.');
-      setResultColor('text-red-600');
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = '';
     }
-  };
 
-  const formatEquation = () => {
-    const a = coeffs.a || 'a';
-    const b = coeffs.b || 'b';
-    const c = coeffs.c || 'c';
-    const bSign = parseFloat(coeffs.b) < 0 ? '' : '+';
-    const cSign = parseFloat(coeffs.c) < 0 ? '' : '+';
-
-    return `${a}x² ${bSign} ${b}x ${cSign} ${c} = 0`;
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6 border border-gray-200">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Calculator className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Giải Phương Trình Bậc 2</h1>
-          </div>
-          <p className="text-gray-500">Nhập các hệ số a, b, c để tìm nghiệm.</p>
-        </div>
-
-        <div className="bg-gray-100 p-4 rounded-lg text-center font-mono text-lg text-gray-700 shadow-inner">
-          {formatEquation()}
-        </div>
-
-        <div className="space-y-4">
-          <InputField id="a" label="a" value={coeffs.a} onChange={handleInputChange} placeholder="Ví dụ: 1" />
-          <InputField id="b" label="b" value={coeffs.b} onChange={handleInputChange} placeholder="Ví dụ: -5" />
-          <InputField id="c" label="c" value={coeffs.c} onChange={handleInputChange} placeholder="Ví dụ: 6" />
-        </div>
-
-        <button
-          onClick={handleCalculate}
-          className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105 duration-200 ease-in-out shadow-md"
-        >
-          Tính Nghiệm
-        </button>
-
-        {result && (
-          <div className="mt-6 p-4 bg-gray-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Kết quả:</h3>
-            <p className={`whitespace-pre-wrap text-base font-medium ${resultColor}`}>{result}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default QuadraticEquationSolverPage;
+    function showRoot(root) {
+      rootResult.textContent = 'Nghiệm gần đúng: ' + root.toFixed(6);
+      rootResult.style.display = '';
+    }
+  </script>
+</body>
+</html>
