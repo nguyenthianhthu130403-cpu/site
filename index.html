@@ -1,264 +1,137 @@
-import React, { useState, useEffect } from 'react';
+import { useState, type FC } from 'react';
+import { Calculator } from 'lucide-react';
 
-export default function QuadraticEquationSolver() {
-  const [a, setA] = useState<string>('1');
-  const [b, setB] = useState<string>('5');
-  const [c, setC] = useState<string>('6');
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string>('');
+// Helper component for input fields to reduce repetition
+interface InputFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+}
 
-  const calculateEquation = () => {
-    setError('');
-    setResult(null);
+const InputField: FC<InputFieldProps> = ({ id, label, value, onChange, placeholder }) => (
+  <div className="w-full">
+    <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      Hệ số {label}
+    </label>
+    <input
+      type="number"
+      id={id}
+      name={id}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+    />
+  </div>
+);
 
-    const numA = parseFloat(a);
-    const numB = parseFloat(b);
-    const numC = parseFloat(c);
+// Main component
+const QuadraticEquationSolverPage = () => {
+  const [coeffs, setCoeffs] = useState({ a: '', b: '', c: '' });
+  const [result, setResult] = useState<string | null>(null);
+  const [resultColor, setResultColor] = useState<string>('text-gray-800');
 
-    if (isNaN(numA) || isNaN(numB) || isNaN(numC)) {
-      setError('Vui lòng nhập số hợp lệ cho tất cả các hệ số');
-      return;
-    }
-
-    if (numA === 0) {
-      setError('Hệ số a phải khác 0 (không phải phương trình bậc 2)');
-      return;
-    }
-
-    const delta = numB * numB - 4 * numA * numC;
-
-    let solutions: any = {
-      a: numA,
-      b: numB,
-      c: numC,
-      delta: delta,
-      deltaFormatted: delta.toFixed(4)
-    };
-
-    if (delta < 0) {
-      solutions.type = 'no_solution';
-      solutions.message = 'Phương trình vô nghiệm (Δ < 0)';
-    } else if (delta === 0) {
-      const x = -numB / (2 * numA);
-      solutions.type = 'one_solution';
-      solutions.x = x;
-      solutions.xFormatted = x.toFixed(4);
-      solutions.message = 'Phương trình có nghiệm kép';
-    } else {
-      const sqrtDelta = Math.sqrt(delta);
-      const x1 = (-numB + sqrtDelta) / (2 * numA);
-      const x2 = (-numB - sqrtDelta) / (2 * numA);
-      solutions.type = 'two_solutions';
-      solutions.sqrtDelta = sqrtDelta;
-      solutions.sqrtDeltaFormatted = sqrtDelta.toFixed(4);
-      solutions.x1 = x1;
-      solutions.x2 = x2;
-      solutions.x1Formatted = x1.toFixed(4);
-      solutions.x2Formatted = x2.toFixed(4);
-      solutions.message = 'Phương trình có hai nghiệm phân biệt';
-    }
-
-    setResult(solutions);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCoeffs(prev => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
-    calculateEquation();
-  }, []);
+  const handleCalculate = () => {
+    const a = parseFloat(coeffs.a);
+    const b = parseFloat(coeffs.b);
+    const c = parseFloat(coeffs.c);
+
+    if (isNaN(a) || isNaN(b) || isNaN(c)) {
+      setResult('Vui lòng nhập đầy đủ và đúng định dạng các hệ số a, b, c.');
+      setResultColor('text-red-600');
+      return;
+    }
+
+    // Case: a = 0 (Linear equation)
+    if (a === 0) {
+      if (b === 0) {
+        if (c === 0) {
+          setResult('Phương trình có vô số nghiệm.');
+          setResultColor('text-green-600');
+        } else {
+          setResult('Phương trình vô nghiệm.');
+          setResultColor('text-red-600');
+        }
+      } else {
+        const x = -c / b;
+        setResult(`Phương trình có một nghiệm duy nhất: x = ${x.toFixed(4)}`);
+        setResultColor('text-blue-600');
+      }
+      return;
+    }
+
+    // Case: a != 0 (Quadratic equation)
+    const delta = b * b - 4 * a * c;
+
+    if (delta > 0) {
+      const x1 = (-b + Math.sqrt(delta)) / (2 * a);
+      const x2 = (-b - Math.sqrt(delta)) / (2 * a);
+      setResult(`Phương trình có hai nghiệm phân biệt:\nx₁ = ${x1.toFixed(4)}\nx₂ = ${x2.toFixed(4)}`);
+      setResultColor('text-green-600');
+    } else if (delta === 0) {
+      const x = -b / (2 * a);
+      setResult(`Phương trình có nghiệm kép: x₁ = x₂ = ${x.toFixed(4)}`);
+      setResultColor('text-blue-600');
+    } else {
+      setResult('Phương trình vô nghiệm trong tập số thực.');
+      setResultColor('text-red-600');
+    }
+  };
+
+  const formatEquation = () => {
+    const a = coeffs.a || 'a';
+    const b = coeffs.b || 'b';
+    const c = coeffs.c || 'c';
+    const bSign = parseFloat(coeffs.b) < 0 ? '' : '+';
+    const cSign = parseFloat(coeffs.c) < 0 ? '' : '+';
+
+    return `${a}x² ${bSign} ${b}x ${cSign} ${c} = 0`;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-indigo-900 mb-2">
-              Giải Phương Trình Bậc 2
-            </h1>
-            <p className="text-gray-600 text-lg">
-              ax² + bx + c = 0
-            </p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6 border border-gray-200">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Calculator className="w-8 h-8 text-indigo-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Giải Phương Trình Bậc 2</h1>
           </div>
-
-          <div className="bg-indigo-50 rounded-xl p-6 mb-8">
-            <h2 className="text-xl font-semibold text-indigo-900 mb-4">
-              Nhập hệ số:
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hệ số a:
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={a}
-                  onChange={(e) => setA(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
-                  placeholder="Nhập a"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hệ số b:
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={b}
-                  onChange={(e) => setB(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
-                  placeholder="Nhập b"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hệ số c:
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={c}
-                  onChange={(e) => setC(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
-                  placeholder="Nhập c"
-                />
-              </div>
-            </div>
-            <button
-              onClick={calculateEquation}
-              className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105"
-            >
-              Tính toán
-            </button>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-              <p className="text-red-700 font-medium">{error}</p>
-            </div>
-          )}
-
-          {result && !error && (
-            <div className="space-y-6">
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Phương trình:
-                </h3>
-                <p className="text-2xl text-center font-mono text-indigo-900">
-                  {result.a}x² {result.b >= 0 ? '+' : ''} {result.b}x {result.c >= 0 ? '+' : ''} {result.c} = 0
-                </p>
-              </div>
-
-              <div className="bg-blue-50 rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Các bước giải:
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                      1
-                    </span>
-                    <div>
-                      <p className="text-gray-700 font-medium">Tính Delta (Δ):</p>
-                      <p className="text-gray-600 mt-1">
-                        Δ = b² - 4ac = ({result.b})² - 4×({result.a})×({result.c})
-                      </p>
-                      <p className="text-indigo-900 font-semibold mt-1">
-                        Δ = {result.deltaFormatted}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                      2
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-gray-700 font-medium mb-2">Kết luận:</p>
-                      
-                      {result.type === 'no_solution' && (
-                        <div className="bg-red-100 border border-red-300 rounded-lg p-4">
-                          <p className="text-red-800 font-semibold text-lg">
-                            {result.message}
-                          </p>
-                          <p className="text-red-700 mt-2">
-                            Vì Δ = {result.deltaFormatted} &lt; 0, phương trình không có nghiệm thực.
-                          </p>
-                        </div>
-                      )}
-
-                      {result.type === 'one_solution' && (
-                        <div className="bg-green-100 border border-green-300 rounded-lg p-4">
-                          <p className="text-green-800 font-semibold text-lg mb-2">
-                            {result.message}
-                          </p>
-                          <p className="text-gray-700 mb-2">
-                            Vì Δ = 0, phương trình có nghiệm kép:
-                          </p>
-                          <p className="text-gray-600">
-                            x = -b / (2a) = -({result.b}) / (2×{result.a})
-                          </p>
-                          <div className="bg-white rounded-lg p-4 mt-3">
-                            <p className="text-2xl font-bold text-green-700 text-center">
-                              x = {result.xFormatted}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {result.type === 'two_solutions' && (
-                        <div className="bg-green-100 border border-green-300 rounded-lg p-4">
-                          <p className="text-green-800 font-semibold text-lg mb-2">
-                            {result.message}
-                          </p>
-                          <p className="text-gray-700 mb-2">
-                            Vì Δ = {result.deltaFormatted} &gt; 0:
-                          </p>
-                          <p className="text-gray-600 mb-2">
-                            √Δ = {result.sqrtDeltaFormatted}
-                          </p>
-                          <div className="space-y-2 mt-3">
-                            <p className="text-gray-600">
-                              x₁ = (-b + √Δ) / (2a) = (-{result.b} + {result.sqrtDeltaFormatted}) / (2×{result.a})
-                            </p>
-                            <p className="text-gray-600">
-                              x₂ = (-b - √Δ) / (2a) = (-{result.b} - {result.sqrtDeltaFormatted}) / (2×{result.a})
-                            </p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-4">
-                            <div className="bg-white rounded-lg p-4">
-                              <p className="text-sm text-gray-600 mb-1">Nghiệm 1:</p>
-                              <p className="text-2xl font-bold text-green-700 text-center">
-                                x₁ = {result.x1Formatted}
-                              </p>
-                            </div>
-                            <div className="bg-white rounded-lg p-4">
-                              <p className="text-sm text-gray-600 mb-1">Nghiệm 2:</p>
-                              <p className="text-2xl font-bold text-green-700 text-center">
-                                x₂ = {result.x2Formatted}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <h4 className="font-semibold text-yellow-900 mb-2">💡 Công thức tổng quát:</h4>
-                <ul className="text-sm text-yellow-800 space-y-1">
-                  <li>• Δ = b² - 4ac</li>
-                  <li>• Nếu Δ &lt; 0: Vô nghiệm</li>
-                  <li>• Nếu Δ = 0: x = -b/(2a)</li>
-                  <li>• Nếu Δ &gt; 0: x₁,₂ = (-b ± √Δ)/(2a)</li>
-                </ul>
-              </div>
-            </div>
-          )}
+          <p className="text-gray-500">Nhập các hệ số a, b, c để tìm nghiệm.</p>
         </div>
+
+        <div className="bg-gray-100 p-4 rounded-lg text-center font-mono text-lg text-gray-700 shadow-inner">
+          {formatEquation()}
+        </div>
+
+        <div className="space-y-4">
+          <InputField id="a" label="a" value={coeffs.a} onChange={handleInputChange} placeholder="Ví dụ: 1" />
+          <InputField id="b" label="b" value={coeffs.b} onChange={handleInputChange} placeholder="Ví dụ: -5" />
+          <InputField id="c" label="c" value={coeffs.c} onChange={handleInputChange} placeholder="Ví dụ: 6" />
+        </div>
+
+        <button
+          onClick={handleCalculate}
+          className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105 duration-200 ease-in-out shadow-md"
+        >
+          Tính Nghiệm
+        </button>
+
+        {result && (
+          <div className="mt-6 p-4 bg-gray-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Kết quả:</h3>
+            <p className={`whitespace-pre-wrap text-base font-medium ${resultColor}`}>{result}</p>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
 
+export default QuadraticEquationSolverPage;
