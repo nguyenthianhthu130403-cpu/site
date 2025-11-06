@@ -1,1 +1,264 @@
-<p> Đây là website AT </p>
+import React, { useState, useEffect } from 'react';
+
+export default function QuadraticEquationSolver() {
+  const [a, setA] = useState<string>('1');
+  const [b, setB] = useState<string>('5');
+  const [c, setC] = useState<string>('6');
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string>('');
+
+  const calculateEquation = () => {
+    setError('');
+    setResult(null);
+
+    const numA = parseFloat(a);
+    const numB = parseFloat(b);
+    const numC = parseFloat(c);
+
+    if (isNaN(numA) || isNaN(numB) || isNaN(numC)) {
+      setError('Vui lòng nhập số hợp lệ cho tất cả các hệ số');
+      return;
+    }
+
+    if (numA === 0) {
+      setError('Hệ số a phải khác 0 (không phải phương trình bậc 2)');
+      return;
+    }
+
+    const delta = numB * numB - 4 * numA * numC;
+
+    let solutions: any = {
+      a: numA,
+      b: numB,
+      c: numC,
+      delta: delta,
+      deltaFormatted: delta.toFixed(4)
+    };
+
+    if (delta < 0) {
+      solutions.type = 'no_solution';
+      solutions.message = 'Phương trình vô nghiệm (Δ < 0)';
+    } else if (delta === 0) {
+      const x = -numB / (2 * numA);
+      solutions.type = 'one_solution';
+      solutions.x = x;
+      solutions.xFormatted = x.toFixed(4);
+      solutions.message = 'Phương trình có nghiệm kép';
+    } else {
+      const sqrtDelta = Math.sqrt(delta);
+      const x1 = (-numB + sqrtDelta) / (2 * numA);
+      const x2 = (-numB - sqrtDelta) / (2 * numA);
+      solutions.type = 'two_solutions';
+      solutions.sqrtDelta = sqrtDelta;
+      solutions.sqrtDeltaFormatted = sqrtDelta.toFixed(4);
+      solutions.x1 = x1;
+      solutions.x2 = x2;
+      solutions.x1Formatted = x1.toFixed(4);
+      solutions.x2Formatted = x2.toFixed(4);
+      solutions.message = 'Phương trình có hai nghiệm phân biệt';
+    }
+
+    setResult(solutions);
+  };
+
+  useEffect(() => {
+    calculateEquation();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-indigo-900 mb-2">
+              Giải Phương Trình Bậc 2
+            </h1>
+            <p className="text-gray-600 text-lg">
+              ax² + bx + c = 0
+            </p>
+          </div>
+
+          <div className="bg-indigo-50 rounded-xl p-6 mb-8">
+            <h2 className="text-xl font-semibold text-indigo-900 mb-4">
+              Nhập hệ số:
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hệ số a:
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={a}
+                  onChange={(e) => setA(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
+                  placeholder="Nhập a"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hệ số b:
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={b}
+                  onChange={(e) => setB(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
+                  placeholder="Nhập b"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hệ số c:
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={c}
+                  onChange={(e) => setC(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 text-lg"
+                  placeholder="Nhập c"
+                />
+              </div>
+            </div>
+            <button
+              onClick={calculateEquation}
+              className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105"
+            >
+              Tính toán
+            </button>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+              <p className="text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          {result && !error && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Phương trình:
+                </h3>
+                <p className="text-2xl text-center font-mono text-indigo-900">
+                  {result.a}x² {result.b >= 0 ? '+' : ''} {result.b}x {result.c >= 0 ? '+' : ''} {result.c} = 0
+                </p>
+              </div>
+
+              <div className="bg-blue-50 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Các bước giải:
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start">
+                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">
+                      1
+                    </span>
+                    <div>
+                      <p className="text-gray-700 font-medium">Tính Delta (Δ):</p>
+                      <p className="text-gray-600 mt-1">
+                        Δ = b² - 4ac = ({result.b})² - 4×({result.a})×({result.c})
+                      </p>
+                      <p className="text-indigo-900 font-semibold mt-1">
+                        Δ = {result.deltaFormatted}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">
+                      2
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-gray-700 font-medium mb-2">Kết luận:</p>
+                      
+                      {result.type === 'no_solution' && (
+                        <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+                          <p className="text-red-800 font-semibold text-lg">
+                            {result.message}
+                          </p>
+                          <p className="text-red-700 mt-2">
+                            Vì Δ = {result.deltaFormatted} &lt; 0, phương trình không có nghiệm thực.
+                          </p>
+                        </div>
+                      )}
+
+                      {result.type === 'one_solution' && (
+                        <div className="bg-green-100 border border-green-300 rounded-lg p-4">
+                          <p className="text-green-800 font-semibold text-lg mb-2">
+                            {result.message}
+                          </p>
+                          <p className="text-gray-700 mb-2">
+                            Vì Δ = 0, phương trình có nghiệm kép:
+                          </p>
+                          <p className="text-gray-600">
+                            x = -b / (2a) = -({result.b}) / (2×{result.a})
+                          </p>
+                          <div className="bg-white rounded-lg p-4 mt-3">
+                            <p className="text-2xl font-bold text-green-700 text-center">
+                              x = {result.xFormatted}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {result.type === 'two_solutions' && (
+                        <div className="bg-green-100 border border-green-300 rounded-lg p-4">
+                          <p className="text-green-800 font-semibold text-lg mb-2">
+                            {result.message}
+                          </p>
+                          <p className="text-gray-700 mb-2">
+                            Vì Δ = {result.deltaFormatted} &gt; 0:
+                          </p>
+                          <p className="text-gray-600 mb-2">
+                            √Δ = {result.sqrtDeltaFormatted}
+                          </p>
+                          <div className="space-y-2 mt-3">
+                            <p className="text-gray-600">
+                              x₁ = (-b + √Δ) / (2a) = (-{result.b} + {result.sqrtDeltaFormatted}) / (2×{result.a})
+                            </p>
+                            <p className="text-gray-600">
+                              x₂ = (-b - √Δ) / (2a) = (-{result.b} - {result.sqrtDeltaFormatted}) / (2×{result.a})
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="bg-white rounded-lg p-4">
+                              <p className="text-sm text-gray-600 mb-1">Nghiệm 1:</p>
+                              <p className="text-2xl font-bold text-green-700 text-center">
+                                x₁ = {result.x1Formatted}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-4">
+                              <p className="text-sm text-gray-600 mb-1">Nghiệm 2:</p>
+                              <p className="text-2xl font-bold text-green-700 text-center">
+                                x₂ = {result.x2Formatted}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h4 className="font-semibold text-yellow-900 mb-2">💡 Công thức tổng quát:</h4>
+                <ul className="text-sm text-yellow-800 space-y-1">
+                  <li>• Δ = b² - 4ac</li>
+                  <li>• Nếu Δ &lt; 0: Vô nghiệm</li>
+                  <li>• Nếu Δ = 0: x = -b/(2a)</li>
+                  <li>• Nếu Δ &gt; 0: x₁,₂ = (-b ± √Δ)/(2a)</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
